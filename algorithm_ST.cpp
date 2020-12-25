@@ -89,7 +89,7 @@ int caculate_the_board(Board sandboard, Player player) {
             int n = sandboard.get_orbs_num(i, j);
             int color = sandboard.get_cell_color(i, j);
             if (color == mycolor) ihaveorb+=n;
-            else if(color == 'w'){}
+            else if(color ==   'w'){}
             else rivalhaveorb+=n;
         }
     }
