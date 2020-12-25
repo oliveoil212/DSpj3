@@ -25,6 +25,7 @@ using namespace std;
  * 4. The function that print out the current board statement
 *************************************************************************/
 int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col);
+int can_reach(int row, int col);
 void algorithm_A(Board board, Player player, int index[])
 {
 
@@ -95,13 +96,60 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
     for (i = 0; i < ROW; i++) {
         for (j = 0; j < COL; j++)
         {
-            int n = sandboard.get_orbs_num(i, j);
-            int color = sandboard.get_cell_color(i, j);
-            if (color == mycolor) ihaveorb+=n;
-            else if(color ==   'w'){}
-            else rivalhaveorb+=n;
+            // traverse neighbors
+            bool dangerous = false;
+            for (int x = -1; x <= 1 ; x++)
+            {
+                for(int y = -1; y <= 1; y++){
+                    if(can_reach(i+x, j+y)){
+                        int color = sandboard.get_cell_color(i+x, j+y);
+                        if(color == mycolor){
+                            if(x == 0 && y == 0) {          
+                                // location score
+                                score += 8 - sandboard.get_capacity(i+x, j+y);
+                                // #orb score
+                                if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
+                                    score -= sandboard.get_orbs_num(i+x, j+y)*2;
+                                } else{
+                                    score -= sandboard.get_orbs_num(i+x, j+y);
+                                }
+                            }
+                            else if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
+                                score += sandboard.get_orbs_num(i+x, j+y)*2;
+                            } else{
+                                score += sandboard.get_orbs_num(i+x, j+y);
+                            }
+                        }
+                        else if(!(color == 'w' || color == mycolor)){
+                            dangerous = true;
+                            if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
+                                score -= sandboard.get_orbs_num(i+x, j+y)*2;
+                            } else{
+                                score -= sandboard.get_orbs_num(i+x, j+y);
+                            }
+                        }
+                    }
+                }
+            }
+            // add up the score
+
+            
         }
     }
     if (rivalhaveorb == 0 && ihaveorb != 0) return 999999;
-    return ihaveorb - rivalhaveorb;
+    return score;
+}
+int can_reach(int row, int col){
+    /* pos
+        0 1 2
+        7 * 3
+        6 5 4
+    */
+//    if(row == 0 && pos <= 2) return -1;                // up
+//    if(row == 5 && pos >= 4 && pos <= 6) return -1;    // bot
+//    if(col == 0 && (pos>=6 || pos ==0)) return -1;   // left
+//    if(col == 6 && pos >= 2 && pos<= 4) return -1;       // right
+    if (row < 0 || row >= ROW) return false;
+    if (col < 0 || col >= COL) return false;
+    return true;
 }
