@@ -24,7 +24,7 @@ using namespace std;
  * 3. The function that return the color fo the cell(row, col)
  * 4. The function that print out the current board statement
 *************************************************************************/
-int caculate_the_board(Board sandboard, Player player);
+int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col);
 void algorithm_A(Board board, Player player, int index[])
 {
 
@@ -33,7 +33,6 @@ void algorithm_A(Board board, Player player, int index[])
     static Player me(RED);
     static Player rival(BLUE);
     static bool firstround = true;
-    int row, col;
     int i, j;
     int mycolor = player.get_color();
     if (firstround)
@@ -61,28 +60,38 @@ void algorithm_A(Board board, Player player, int index[])
     else {
         // update the board afer rival move
         myboard.place_orb(index[0], index[1], &rival);
-        cout<< "after rival's play the board  is  "<< caculate_the_board(myboard, me);
+        // cout<< "after rival's play the board  is  "<< caculate_the_board(myboard, me);
     }
     // algorithm
-    while (1)
+    int bestscore = -1000000000;
+    int row, col; // location of best placement
+    for (i = 0; i < ROW; i++)
     {
-        row = rand() % 5;
-        col = rand() % 6;
-        if (board.get_cell_color(row, col) == mycolor || board.get_cell_color(row, col) == 'w')
-            break;
+        for (j = 0; j < COL; j++)
+        {
+            int color = board.get_cell_color(i, j);
+            if(color == mycolor) {
+                int score = caculate_the_board_after_the_move(myboard, me, i, j);
+                if (score > bestscore) {
+                    row = i;
+                    col =j;
+                    bestscore = score;
+                }
+            }
+        }
     }
     index[0] = row;
     index[1] = col;
     myboard.place_orb(index[0], index[1], &me);
-    cout<< " and after my play my board would be  "<< caculate_the_board(myboard, me) << endl;
+    // cout<< " and after my play my board would be  "<< caculate_the_board(myboard, me) << endl;
     // myboard.print_current_board(row, col, -11111111);   
 }
-int caculate_the_board(Board sandboard, Player player) {
+int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col) {
     int mycolor = player.get_color();
     int ihaveorb = 0, rivalhaveorb = 0;
     int score = 0;
     int i, j;
-
+    sandboard.place_orb(row, col, &player);
     for (i = 0; i < ROW; i++) {
         for (j = 0; j < COL; j++)
         {
@@ -93,5 +102,6 @@ int caculate_the_board(Board sandboard, Player player) {
             else rivalhaveorb+=n;
         }
     }
+    if (rivalhaveorb == 0 && ihaveorb != 0) return 999999;
     return ihaveorb - rivalhaveorb;
 }
