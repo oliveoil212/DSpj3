@@ -26,6 +26,8 @@ using namespace std;
 *************************************************************************/
 int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col);
 int can_reach(int row, int col);
+int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme, bool isfirststep);
+void copy_board(Board &colone, Board &mother, Player me);
 void algorithm_A(Board board, Player player, int index[])
 {
 
@@ -33,30 +35,15 @@ void algorithm_A(Board board, Player player, int index[])
     static Board myboard;
     static Player me(RED);
     static Player rival(BLUE);
-    static bool firstround = true;
+    static bool isfirstround = true;
+    static bool isfirststep;
     int i, j;
     int mycolor = player.get_color();
-    if (firstround)
+    if (isfirstround)
     {
-        firstround = false;
-        // initial myboard
-        for (i = 0; i < ROW; i++)
-        {
-            for (j = 0; j < COL; j++)
-            {
-                int n = board.get_orbs_num(i, j);
-                int p = board.get_cell_color(i, j);
-                for (int k = 0; k < n; k++)
-                {
-                    if (p == mycolor)
-                        myboard.place_orb(i, j, &me);
-                    // else if (p == 'w')
-                    //     break;
-                    else
-                        myboard.place_orb(i, j, &rival);
-                }
-            }
-        }
+        isfirstround = false;
+        isfirststep =true;
+        copy_board(myboard, board, me);
     }
     else {
         // update the board afer rival move
@@ -64,7 +51,7 @@ void algorithm_A(Board board, Player player, int index[])
         // cout<< "after rival's play the board  is  "<< caculate_the_board(myboard, me);
     }
     // algorithm
-    int bestscore = -1000000000;
+    int bestscore = -2000010000;
     int row, col; // location of best placement
     for (i = 0; i < ROW; i++)
     {
@@ -72,7 +59,10 @@ void algorithm_A(Board board, Player player, int index[])
         {
             int color = board.get_cell_color(i, j);
             if(color == mycolor || color == 'w') {
-                int score = caculate_the_board_after_the_move(myboard, me, i, j);
+                Board newboard;
+                copy_board(newboard, myboard, player);
+                newboard.place_orb(i, j, &player);
+                int score = minmax(newboard, 0, player, rival, true, isfirststep);
                 //  cout << "thinking " << i << ", "<< j <<"  score is " << score << endl;
                 if (score > bestscore) {
                     // cout << "change mind form " << row << ". " << col <<"to "<< i << ". " << j ;
@@ -87,15 +77,59 @@ void algorithm_A(Board board, Player player, int index[])
     index[0] = row;
     index[1] = col;
     myboard.place_orb(index[0], index[1], &me);
-    // cout<< " and after my play my board would be  "<< caculate_the_board(myboard, me) << endl;
-    // myboard.print_current_board(row, col, -11111111);   
+    isfirststep = false;
+}
+int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme, bool isfirststep){
+    if(sandboard.win_the_game(playerme) && !isfirststep) {if(isme)return 2000000000;return -2000000000;}
+    if(sandboard.win_the_game(rival) && !isfirststep) {if(isme)return -2000000000;return 2000000000;}
+    if(depth == 2) {
+        if(isme) return caculate_the_board_after_the_move(sandboard, playerme, 0 ,0);
+        else return -caculate_the_board_after_the_move(sandboard, rival, 0 ,0);
+    }
+    int mycolor = playerme.get_color();
+    if(isme) {
+        int bestscore = -1000000000;
+        for (int i = 0; i < ROW; i++)
+        {
+            for (int j = 0; j < COL; j++)
+            {
+                int color = sandboard.get_cell_color(i, j);
+                if(color == mycolor || color == 'w') {
+                    Board newboard;
+                    copy_board(newboard, sandboard, playerme);
+                    newboard.place_orb(i, j, &playerme);
+                    int score = minmax(newboard, depth + 1, playerme, rival, false, false);
+                    bestscore = max(score, bestscore);
+                }
+            }
+        }
+        return bestscore;
+    }
+    else {
+        int bestscore = 1000000000;
+        for (int i = 0; i < ROW; i++)
+        {
+            for (int j = 0; j < COL; j++)
+            {
+                int color = sandboard.get_cell_color(i, j);
+                if(color != mycolor || color == 'w') {
+                    Board newboard;
+                    copy_board(newboard, sandboard, playerme);
+                    newboard.place_orb(i, j, &rival);
+                    int score = minmax(newboard, depth + 1,playerme, rival, true, false);
+                    bestscore = min(score, bestscore);
+                }
+            }
+        }
+        return bestscore;   
+    }
 }
 int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col) {
     int mycolor = player.get_color();
     int ihaveorb = 0, rivalhaveorb = 0;
     int score = 0;
     int i, j;
-    sandboard.place_orb(row, col, &player);
+    // sandboard.place_orb(row, col, &player);
     for (i = 0; i < ROW; i++) {
         for (j = 0; j < COL; j++)
         {
@@ -153,11 +187,35 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
             }
         }
     }
-    if (rivalhaveorb == 0 && ihaveorb > 1) return 1999999999;
+    // if (rivalhaveorb == 0 && ihaveorb > 1) return 1999999999;
+    // else if(rivalhaveorb > 0 && ihaveorb == 0) return -199999999;
     return score;
 }
 int can_reach(int row, int col){
     if (row < 0 || row >= ROW) return false;
     if (col < 0 || col >= COL) return false;
     return true;
+}
+void copy_board(Board &colone, Board &mother, Player me){
+    int mycolor = me.get_color();
+    int i ,j;
+    for (i = 0; i < ROW; i++)
+        {
+            for (j = 0; j < COL; j++)
+            {
+                int n = mother.get_orbs_num(i, j);
+                int p = mother.get_cell_color(i, j);
+                for (int k = 0; k < n; k++)
+                {
+                    if (p == mycolor)
+                        colone.place_orb(i, j, &me);
+                    // else if (p == 'w')
+                    //     break;
+                    else{
+                        Player rival(p);
+                        colone.place_orb(i, j, &rival);
+                    }
+                }
+            }
+        }
 }
