@@ -129,12 +129,31 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
 
             } else if(sandboard.get_cell_color(i, j) != 'w') {
                 rivalhaveorb+= sandboard.get_orbs_num(i, j);
+                int dangerous = 1;
+                for (int x = -1; x <= 1 ; x++)
+                {
+                    for(int y = -1; y <= 1; y++){
+                        if(can_reach(i+x, j+y)){
+                            if(!(sandboard.get_cell_color(i+x, j+y) == 'w' || sandboard.get_cell_color(i+x, j+y) != mycolor)){                            
+                                if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
+                                    score += 8 - sandboard.get_orbs_num(i+x, j+y);
+                                    dangerous = -1;
+                                } 
+                            }
+                        }
+                    }
+                }
+                
+                if(dangerous == 1) {      
+                    score -= 8 - sandboard.get_capacity(i, j);
+                    if(sandboard.get_orbs_num(i, j) == sandboard.get_capacity(i, j) - 1){
+                        score -= 10;
+                    }
+                } 
             }
-                    
-            // add up the score
         }
     }
-    if (rivalhaveorb == 0 && ihaveorb > 1) return 9999999;
+    if (rivalhaveorb == 0 && ihaveorb > 1) return 1999999999;
     return score;
 }
 int can_reach(int row, int col){
