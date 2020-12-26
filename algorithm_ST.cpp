@@ -71,9 +71,12 @@ void algorithm_A(Board board, Player player, int index[])
         for (j = 0; j < COL; j++)
         {
             int color = board.get_cell_color(i, j);
-            if(color == mycolor) {
+            if(color == mycolor || color == 'w') {
                 int score = caculate_the_board_after_the_move(myboard, me, i, j);
+                //  cout << "thinking " << i << ", "<< j <<"  score is " << score << endl;
                 if (score > bestscore) {
+                    // cout << "change mind form " << row << ". " << col <<"to "<< i << ". " << j ;
+                    // cout << "==>  bestscore is " << bestscore <<"  score is " << score << endl;
                     row = i;
                     col =j;
                     bestscore = score;
@@ -96,59 +99,45 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
     for (i = 0; i < ROW; i++) {
         for (j = 0; j < COL; j++)
         {
-            // traverse neighbors
-            bool dangerous = false;
-            for (int x = -1; x <= 1 ; x++)
-            {
-                for(int y = -1; y <= 1; y++){
-                    if(can_reach(i+x, j+y)){
-                        int color = sandboard.get_cell_color(i+x, j+y);
-                        if(color == mycolor){
-                            if(x == 0 && y == 0) {          
-                                // location score
-                                score += 8 - sandboard.get_capacity(i+x, j+y);
-                                // #orb score
+            if(sandboard.get_cell_color(i, j) == mycolor) {
+                ihaveorb+=sandboard.get_orbs_num(i, j);
+                // traverse neighbors
+                int dangerous = 1;
+                for (int x = -1; x <= 1 ; x++)
+                {
+                    for(int y = -1; y <= 1; y++){
+                        if(can_reach(i+x, j+y)){
+                            if(!(sandboard.get_cell_color(i+x, j+y) == 'w' || sandboard.get_cell_color(i+x, j+y) == mycolor)){                            
                                 if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
-                                    score -= sandboard.get_orbs_num(i+x, j+y)*2;
-                                } else{
-                                    score -= sandboard.get_orbs_num(i+x, j+y);
-                                }
-                            }
-                            else if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
-                                score += sandboard.get_orbs_num(i+x, j+y)*2;
-                            } else{
-                                score += sandboard.get_orbs_num(i+x, j+y);
-                            }
-                        }
-                        else if(!(color == 'w' || color == mycolor)){
-                            dangerous = true;
-                            if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
-                                score -= sandboard.get_orbs_num(i+x, j+y)*2;
-                            } else{
-                                score -= sandboard.get_orbs_num(i+x, j+y);
+                                    score -= 8 - sandboard.get_orbs_num(i+x, j+y);
+                                    dangerous = -1;
+                                } 
                             }
                         }
                     }
                 }
-            }
-            // add up the score
+                
+                if(dangerous == 1) {      
+                    score += 8 - sandboard.get_capacity(i, j);
+                    if(sandboard.get_orbs_num(i, j) == sandboard.get_capacity(i, j) - 1){
+                        score += 10;
+                    }
+                } 
+                
 
-            
+
+
+            } else if(sandboard.get_cell_color(i, j) != 'w') {
+                rivalhaveorb+= sandboard.get_orbs_num(i, j);
+            }
+                    
+            // add up the score
         }
     }
-    if (rivalhaveorb == 0 && ihaveorb != 0) return 999999;
+    if (rivalhaveorb == 0 && ihaveorb > 1) return 9999999;
     return score;
 }
 int can_reach(int row, int col){
-    /* pos
-        0 1 2
-        7 * 3
-        6 5 4
-    */
-//    if(row == 0 && pos <= 2) return -1;                // up
-//    if(row == 5 && pos >= 4 && pos <= 6) return -1;    // bot
-//    if(col == 0 && (pos>=6 || pos ==0)) return -1;   // left
-//    if(col == 6 && pos >= 2 && pos<= 4) return -1;       // right
     if (row < 0 || row >= ROW) return false;
     if (col < 0 || col >= COL) return false;
     return true;
