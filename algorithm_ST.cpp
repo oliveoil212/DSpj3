@@ -29,14 +29,20 @@ int can_reach(int row, int col);
 int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme, bool isfirststep);
 void copy_board(Board &colone, Board &mother, Player me);
 void algorithm_A(Board board, Player player, int index[])
-{
-
+{   
+    char player1 = RED;
+    char player2 = BLUE;
+    if(player.get_color() == BLUE){
+        player2 = RED;
+        player1 = BLUE;
+    }
     //////your algorithm design///////////
     static Board myboard;
-    static Player me(RED);
-    static Player rival(BLUE);
+    static Player me(player1);
+    static Player rival(player2);
     static bool isfirstround = true;
     static bool isfirststep;
+    if(isfirstround)printf("ST is %c and me is %c\n", player.get_color(), player1);
     int i, j;
     int mycolor = player.get_color();
     if (isfirstround)
