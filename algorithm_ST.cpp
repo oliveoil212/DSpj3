@@ -5,6 +5,9 @@
 
 using namespace std;
 
+#include <chrono>
+typedef std::chrono::high_resolution_clock Clock;
+
 /******************************************************
  * In your algorithm, you can just use the the funcitons
  * listed by TA to get the board information.(functions 
@@ -24,55 +27,35 @@ using namespace std;
  * 3. The function that return the color fo the cell(row, col)
  * 4. The function that print out the current board statement
 *************************************************************************/
-int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col);
+int caculate_the_board(Board &sandboard);
 int can_reach(int row, int col);
-int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme, bool isfirststep);
-void copy_board(Board &colone, Board &mother, Player me);
+int minmax(Board sandboard, int depth, bool ismyturn);
+int omaewashiteru(Board sandboard);
+void copy_board(Board &colone, Board mother, Player me);
 void algorithm_A(Board board, Player player, int index[])
 {   
-    char player1 = RED;
-    char player2 = BLUE;
-    if(player.get_color() == BLUE){
-        player2 = RED;
-        player1 = BLUE;
-    }
+    auto start_time = Clock::now();
+    
     //////your algorithm design///////////
-    static Board myboard;
-    static Player me(player1);
-    static Player rival(player2);
-    static bool isfirstround = true;
-    static bool isfirststep;
-    if(isfirstround)printf("ST is %c and me is %c\n", player.get_color(), player1);
+    static Player me(RED);
+    static Player rival(BLUE);
+    // static bool isfirstround = true;
     int i, j;
-    int mycolor = player.get_color();
-    if (isfirstround)
-    {
-        isfirstround = false;
-        isfirststep =true;
-        copy_board(myboard, board, me);
-    }
-    else {
-        // update the board afer rival move
-        myboard.place_orb(index[0], index[1], &rival);
-        // cout<< "after rival's play the board  is  "<< caculate_the_board(myboard, me);
-    }
-    // algorithm
+    Board myboard; // On my board, red is me!
     int bestscore = -2000010000;
-    int row, col; // location of best placement
+    copy_board(myboard, board, player);
+    int row = -1, col = -1; // location of best placement
     for (i = 0; i < ROW; i++)
     {
         for (j = 0; j < COL; j++)
         {
-            int color = board.get_cell_color(i, j);
-            if(color == mycolor || color == 'w') {
+            char color = myboard.get_cell_color(i, j);
+            if(color != BLUE) {
                 Board newboard;
-                copy_board(newboard, myboard, player);
-                newboard.place_orb(i, j, &player);
-                int score = minmax(newboard, 0, player, rival, true, isfirststep);
-                //  cout << "thinking " << i << ", "<< j <<"  score is " << score << endl;
-                if (score > bestscore) {
-                    // cout << "change mind form " << row << ". " << col <<"to "<< i << ". " << j ;
-                    // cout << "==>  bestscore is " << bestscore <<"  score is " << score << endl;
+                copy_board(newboard, board, player);
+                newboard.place_orb(i, j, &me);
+                int score = minmax(newboard, 1, false);
+                if (score >= bestscore) {
                     row = i;
                     col =j;
                     bestscore = score;
@@ -82,29 +65,37 @@ void algorithm_A(Board board, Player player, int index[])
     }
     index[0] = row;
     index[1] = col;
-    myboard.place_orb(index[0], index[1], &me);
-    isfirststep = false;
-}
-int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme, bool isfirststep){
-    if(sandboard.win_the_game(playerme) && !isfirststep) {if(isme)return 2000000000;return -2000000000;}
-    if(sandboard.win_the_game(rival) && !isfirststep) {if(isme)return -2000000000;return 2000000000;}
-    if(depth == 2) {
-        if(isme) return caculate_the_board_after_the_move(sandboard, playerme, 0 ,0);
-        else return -caculate_the_board_after_the_move(sandboard, rival, 0 ,0);
+    auto end_time = Clock::now();
+    int dura = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1000000;
+    std::cout << "Time difference: of a move"
+              << dura << " nanoseconds" << std::endl;
+    if(dura > 1000){
+        cout << "time exceed" << endl;
+        exit(1);
     }
-    int mycolor = playerme.get_color();
-    if(isme) {
-        int bestscore = -1000000000;
+}
+int minmax(Board sandboard, int depth, bool ismyturn){
+    Player me(RED);
+    Player rival(BLUE);
+    // sandboard.print_current_board(depth,123,123);
+    int areuwiningson = omaewashiteru(sandboard);
+    if(areuwiningson == 1) return 1999999999;
+    else if(areuwiningson == -1) return -1999999999;
+    if(depth == 4) {
+         return caculate_the_board(sandboard);
+    }
+    if(ismyturn) {
+        int bestscore = -2000000000;
         for (int i = 0; i < ROW; i++)
         {
             for (int j = 0; j < COL; j++)
             {
-                int color = sandboard.get_cell_color(i, j);
-                if(color == mycolor || color == 'w') {
+                char color = sandboard.get_cell_color(i, j);
+                if(color != BLUE)  {
                     Board newboard;
-                    copy_board(newboard, sandboard, playerme);
-                    newboard.place_orb(i, j, &playerme);
-                    int score = minmax(newboard, depth + 1, playerme, rival, false, false);
+                    copy_board(newboard, sandboard, me);
+                    newboard.place_orb(i, j, &me);
+                    int score = minmax(newboard, depth + 1, false);
                     bestscore = max(score, bestscore);
                 }
             }
@@ -112,17 +103,17 @@ int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme,
         return bestscore;
     }
     else {
-        int bestscore = 1000000000;
+        int bestscore = 2000000000;
         for (int i = 0; i < ROW; i++)
         {
             for (int j = 0; j < COL; j++)
             {
-                int color = sandboard.get_cell_color(i, j);
-                if(color != mycolor || color == 'w') {
+                char color = sandboard.get_cell_color(i, j);
+                if(color != RED) {
                     Board newboard;
-                    copy_board(newboard, sandboard, playerme);
+                    copy_board(newboard, sandboard, me);
                     newboard.place_orb(i, j, &rival);
-                    int score = minmax(newboard, depth + 1,playerme, rival, true, false);
+                    int score = minmax(newboard, depth + 1, true);
                     bestscore = min(score, bestscore);
                 }
             }
@@ -130,16 +121,16 @@ int minmax(Board sandboard, int depth, Player playerme, Player rival, bool isme,
         return bestscore;   
     }
 }
-int caculate_the_board_after_the_move(Board sandboard, Player player, const int row, int col) {
-    int mycolor = player.get_color();
+int caculate_the_board(Board &sandboard) {
     int ihaveorb = 0, rivalhaveorb = 0;
     int score = 0;
     int i, j;
-    // sandboard.place_orb(row, col, &player);
+
     for (i = 0; i < ROW; i++) {
         for (j = 0; j < COL; j++)
         {
-            if(sandboard.get_cell_color(i, j) == mycolor) {
+            char color = sandboard.get_cell_color(i, j);
+            if(color == RED) {
                 ihaveorb+=sandboard.get_orbs_num(i, j);
                 // traverse neighbors
                 int dangerous = 1;
@@ -147,7 +138,8 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
                 {
                     for(int y = -1; y <= 1; y++){
                         if(can_reach(i+x, j+y)){
-                            if(!(sandboard.get_cell_color(i+x, j+y) == 'w' || sandboard.get_cell_color(i+x, j+y) == mycolor)){                            
+                            char neighbor_color = sandboard.get_cell_color(i+x, j+y);
+                            if(neighbor_color == BLUE){                            
                                 if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
                                     score -= 8 - sandboard.get_orbs_num(i+x, j+y);
                                     dangerous = -1;
@@ -155,26 +147,22 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
                             }
                         }
                     }
-                }
-                
+                }                
                 if(dangerous == 1) {      
                     score += 8 - sandboard.get_capacity(i, j);
                     if(sandboard.get_orbs_num(i, j) == sandboard.get_capacity(i, j) - 1){
                         score += 10;
                     }
-                } 
-                
-
-
-
-            } else if(sandboard.get_cell_color(i, j) != 'w') {
+                }                
+            } else if(color == BLUE) {
                 rivalhaveorb+= sandboard.get_orbs_num(i, j);
                 int dangerous = 1;
                 for (int x = -1; x <= 1 ; x++)
                 {
                     for(int y = -1; y <= 1; y++){
                         if(can_reach(i+x, j+y)){
-                            if(!(sandboard.get_cell_color(i+x, j+y) == 'w' || sandboard.get_cell_color(i+x, j+y) != mycolor)){                            
+                            char neighbor_color = sandboard.get_cell_color(i+x, j+y);
+                            if(neighbor_color == RED){                            
                                 if(sandboard.get_orbs_num(i+x, j+y) == sandboard.get_capacity(i+x, j+y) - 1){
                                     score += 8 - sandboard.get_orbs_num(i+x, j+y);
                                     dangerous = -1;
@@ -182,8 +170,7 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
                             }
                         }
                     }
-                }
-                
+                }                
                 if(dangerous == 1) {      
                     score -= 8 - sandboard.get_capacity(i, j);
                     if(sandboard.get_orbs_num(i, j) == sandboard.get_capacity(i, j) - 1){
@@ -193,35 +180,47 @@ int caculate_the_board_after_the_move(Board sandboard, Player player, const int 
             }
         }
     }
-    // if (rivalhaveorb == 0 && ihaveorb > 1) return 1999999999;
-    // else if(rivalhaveorb > 0 && ihaveorb == 0) return -199999999;
-    return score;
+    if (rivalhaveorb == 0 && ihaveorb > 1) return 1999999989;
+    else if(rivalhaveorb > 0 && ihaveorb == 0) return -199999989;
+    return score + ihaveorb - rivalhaveorb;
 }
 int can_reach(int row, int col){
     if (row < 0 || row >= ROW) return false;
     if (col < 0 || col >= COL) return false;
     return true;
 }
-void copy_board(Board &colone, Board &mother, Player me){
-    int mycolor = me.get_color();
+void copy_board(Board &colone, Board mother, Player me){
+    Player I(RED);
+    Player rival(BLUE);
+    char mycolor = me.get_color();
     int i ,j;
-    for (i = 0; i < ROW; i++)
-        {
-            for (j = 0; j < COL; j++)
-            {
-                int n = mother.get_orbs_num(i, j);
-                int p = mother.get_cell_color(i, j);
-                for (int k = 0; k < n; k++)
-                {
-                    if (p == mycolor)
-                        colone.place_orb(i, j, &me);
-                    // else if (p == 'w')
-                    //     break;
-                    else{
-                        Player rival(p);
-                        colone.place_orb(i, j, &rival);
-                    }
-                }
+    for (i = 0; i < ROW; i++) {
+        for (j = 0; j < COL; j++) {
+            int n = mother.get_orbs_num(i, j);
+            char p = mother.get_cell_color(i, j);
+            for (int k = 0; k < n; k++)  {
+                if (p == mycolor)
+                    colone.place_orb(i, j, &I);
+                else if (p != 'w')
+                    colone.place_orb(i, j, &rival); 
             }
         }
+    }
+}
+int omaewashiteru(Board sandboard) {
+    int myorbs = 0, notmyorbs =0;
+    int i , j;
+    for (i = 0; i < ROW; i++) {
+        for (j = 0; j < COL; j++) {
+            int n = sandboard.get_orbs_num(i, j);
+            int p = sandboard.get_cell_color(i, j);
+            if (p == RED)
+                myorbs += n;
+            else if(p == BLUE)
+                notmyorbs += n;
+        }
+    }
+    if(myorbs > 0 && notmyorbs == 0) return 1;
+    if(notmyorbs > 0 && myorbs == 0) return -1;
+    return 0;
 }
