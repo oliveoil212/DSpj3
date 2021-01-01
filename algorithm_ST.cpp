@@ -34,16 +34,13 @@ int omaewashiteru(Board sandboard);
 void copy_board(Board &colone, Board mother, Player me);
 void algorithm_A(Board board, Player player, int index[])
 {   
-    auto start_time = Clock::now();
-    
     //////your algorithm design///////////
     static Player me(RED);
     static Player rival(BLUE);
-    // static bool isfirstround = true;
     int i, j;
     Board myboard; // On my board, red is me!
-    int bestscore = -2000010000;
     copy_board(myboard, board, player);
+    int bestscore = -2000010000;
     int row = -1, col = -1; // location of best placement
     for (i = 0; i < ROW; i++)
     {
@@ -65,19 +62,10 @@ void algorithm_A(Board board, Player player, int index[])
     }
     index[0] = row;
     index[1] = col;
-    auto end_time = Clock::now();
-    int dura = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count()/1000000;
-    std::cout << "Time difference: of a move"
-              << dura << " nanoseconds" << std::endl;
-    if(dura > 1000){
-        cout << "time exceed" << endl;
-        exit(1);
-    }
 }
 int minmax(Board sandboard, int depth, bool ismyturn){
     Player me(RED);
     Player rival(BLUE);
-    // sandboard.print_current_board(depth,123,123);
     int areuwiningson = omaewashiteru(sandboard);
     if(areuwiningson == 1) return 1999999999;
     else if(areuwiningson == -1) return -1999999999;
